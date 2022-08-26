@@ -104,6 +104,6 @@ def get_loader(config):
                                   shuffle=False,
                                   num_workers=0, collate_fn=collate_fn)
         test_loader = DataLoader(dataset=CustomDataset(test_df['ID'].values, None, test_points),
-                                 batch_size = config.batch_size, shuffle = False, num_workers=4, collate_fn=collate_fn)
+                                 batch_size = config.batch_size, shuffle = False, num_workers=0, collate_fn=collate_fn)
 
         return train_loader, valid_loader, test_loader

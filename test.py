@@ -1,13 +1,13 @@
+from data_loader import get_loader, CustomDataset
 import argparse
-
-import torch
-import torch.nn as nn
-import torch.optim as optim
-
-from data_loader import get_loader
-from trainer import Trainer
-
 from model_loader import BaseModel
+import torch
+import tqdm
+import h5py
+
+from torch.utils.data import Dataset, DataLoader, random_split
+
+import pandas as pd
 
 def define_argparser():
     p = argparse.ArgumentParser()
@@ -41,27 +41,30 @@ def get_model(config):
 def main(config):
     # Set device based on user defined configuration.
     device = torch.device('cpu') if config.gpu_id < 0 else torch.device('cuda:%d' % config.gpu_id)
-
-    train_loader, valid_loader, test_loader = get_loader(config)
+    print(device)
+    test_df = pd.read_csv("./sample_submission.csv")
+    test_points = h5py.File("./test.h5", "r")
+    test_dataset = CustomDataset(test_df['ID'].values, None, test_points)
+    test_loader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=False, num_workers=0)
 
     print("Test:", len(test_loader.dataset))
 
     model = get_model(config).to(device)
-    optimizer = optim.Adam(model.parameters(), lr = config.lr)
-    crit = nn.CrossEntropyLoss().to(device)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,
-                                                           mode='max',
-                                                           verbose=True,
-                                                           patience=7,
-                                                           factor=0.5)
+    d = torch.load(config.model_fn, map_location = device)
+    model.state_dict(d["model"])
+    model.eval()
 
-    if config.verbose >= 2:
-        print(model)
-        print(optimizer)
-        print(crit)
+    model_preds = []
+    with torch.no_grad():
+        for data in tqdm.tqdm(test_loader):
+            data = data.float().to(device)
 
-    trainer = Trainer(config)
-    trainer.train(model, crit, optimizer,  train_loader, valid_loader)
+            batch_pred = model(data)
+            model_preds += batch_pred.argmax(1).detach().cpu().numpy().tolist()
+
+    test_df["label"] = model_preds
+    test_df.to_csv("./submit.csv", index = False)
+
 
 if __name__ == '__main__':
     config = define_argparser()
