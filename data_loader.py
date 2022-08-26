@@ -94,8 +94,8 @@ def get_loader(config):
         return train_loader
 
     if config.train_ratio < 1.0:
-        train_cnt = int(all_df.shape[0] * config.train_ratio)
-        train_df, val_df = train_test_split(all_df, train_size=train_cnt)
+        train_df = all_df.iloc[:int(len(all_df) * config.train_ratio)]
+        val_df = all_df.iloc[int(len(all_df) * config.train_ratio):]
 
         train_loader = DataLoader(dataset=CustomDataset(train_df['ID'].values, train_df['label'].values, all_points), batch_size=config.batch_size,
                                   shuffle=True,

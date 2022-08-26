@@ -6,3 +6,4 @@ credentials/*.json
 *.zip
 *.ipynb
 *.h5
+*.pth

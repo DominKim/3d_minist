@@ -44,11 +44,11 @@ class MyEngine(Engine):
         engine.optimizer.zero_grad()
 
         x, y = mini_batch
-        x, y = x.to(engine.device), y.to(engine.device)
 
+        x = torch.stack(x).to(engine.device)
+        y = torch.stack([torch.tensor(t).to(engine.device) for t in y])
         # Take feed-forward
         y_hat = engine.model(x)
-
         loss = engine.crit(y_hat, y)
         loss.backward()
 
@@ -78,7 +78,8 @@ class MyEngine(Engine):
 
         with torch.no_grad():
             x, y = mini_batch
-            x, y = x.to(engine.device), y.to(engine.device)
+            x = torch.stack(x).to(engine.device)
+            y = torch.stack([torch.tensor(t).to(engine.device) for t in y])
 
             y_hat = engine.model(x)
 
