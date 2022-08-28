@@ -50,7 +50,7 @@ def main(config):
     print("Test:", len(test_loader.dataset))
 
     model = get_model(config).to(device)
-    d = torch.load(config.model_fn, map_location = device)
+    d = torch.load("./base_model.pth", map_location = device)
     model.state_dict(d["model"])
     model.eval()
 
@@ -60,6 +60,7 @@ def main(config):
             data = data.float().to(device)
 
             batch_pred = model(data)
+            
             model_preds += batch_pred.argmax(1).detach().cpu().numpy().tolist()
 
     test_df["label"] = model_preds

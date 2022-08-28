@@ -18,9 +18,9 @@ def define_argparser():
     p.add_argument('--train_ratio', type=float, default=.8)
 
     p.add_argument('--batch_size', type=int, default=16)
-    p.add_argument('--n_epochs', type=int, default=20)
+    p.add_argument('--n_epochs', type=int, default=7)
     p.add_argument('--verbose', type=int, default=2)
-    p.add_argument('--lr', type=float, default=0.001)
+    p.add_argument('--lr', type=float, default=0.0001)
 
     p.add_argument('--model', type=str, default='3d')
 
