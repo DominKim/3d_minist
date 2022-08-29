@@ -55,8 +55,6 @@ def main(config):
 
     train_loader, valid_loader, test_loader = get_loader(config)
 
-    print("Test:", len(test_loader.dataset))
-
     seed_everything(41)
     model = get_model(config).to(device)
     optimizer = optim.Adam(model.parameters(), lr = config.lr)
