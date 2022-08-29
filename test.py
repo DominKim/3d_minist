@@ -20,7 +20,7 @@ def define_argparser():
     p.add_argument('--batch_size', type=int, default=16)
     p.add_argument('--n_epochs', type=int, default=20)
     p.add_argument('--verbose', type=int, default=2)
-    p.add_argument('--lr', type=float, default=0.001)
+    p.add_argument('--lr', type=float, default=1e-3)
 
     p.add_argument('--model', type=str, default='3d')
 
@@ -42,10 +42,7 @@ def main(config):
     # Set device based on user defined configuration.
     device = torch.device('cpu') if config.gpu_id < 0 else torch.device('cuda:%d' % config.gpu_id)
     print(device)
-    test_df = pd.read_csv("./sample_submission.csv")
-    test_points = h5py.File("./test.h5", "r")
-    test_dataset = CustomDataset(test_df['ID'].values, None, test_points)
-    test_loader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=False, num_workers=0)
+    train_loader, valid_loader, test_loader = get_loader(config)
 
     print("Test:", len(test_loader.dataset))
 
@@ -54,6 +51,7 @@ def main(config):
     model.state_dict(d["model"])
     model.eval()
 
+    test_df = pd.read_csv("./sample_submission.csv")
     model_preds = []
     with torch.no_grad():
         for data in tqdm.tqdm(test_loader):

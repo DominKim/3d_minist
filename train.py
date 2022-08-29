@@ -8,6 +8,9 @@ from data_loader import get_loader
 from trainer import Trainer
 
 from model_loader import BaseModel
+import random
+import os
+import numpy as np
 
 def define_argparser():
     p = argparse.ArgumentParser()
@@ -37,6 +40,14 @@ def get_model(config):
 
     return model
 
+def seed_everything(seed):
+    random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = True
 
 def main(config):
     # Set device based on user defined configuration.
@@ -46,6 +57,7 @@ def main(config):
 
     print("Test:", len(test_loader.dataset))
 
+    seed_everything(41)
     model = get_model(config).to(device)
     optimizer = optim.Adam(model.parameters(), lr = config.lr)
     crit = nn.CrossEntropyLoss().to(device)

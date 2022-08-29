@@ -11,15 +11,17 @@ import numpy as np
 
 import pandas as pd
 import os
+import torchio as tio
 
 os.environ['KMP_DUPLICATE_LIB_OK'] = 'True'
 
 
 class CustomDataset(Dataset):
-    def __init__(self, id_list, label_list, point_list):
+    def __init__(self, id_list, label_list, point_list, transform):
         self.id_list = id_list
         self.label_list = label_list
         self.point_list = point_list
+        self.transform = transform
 
     def __getitem__(self, index):
         image_id = self.id_list[index]
@@ -28,9 +30,9 @@ class CustomDataset(Dataset):
         points = self.point_list[str(image_id)][:]
         image = self.get_vector(points)
 
-        if self.label_list is not None:
+        if self.label_list is not None and self.transform is not None:
             label = self.label_list[index]
-            return torch.Tensor(image).unsqueeze(0), label
+            return self.transform(torch.Tensor(image).unsqueeze(0)), label
         else:
             return torch.Tensor(image).unsqueeze(0)
 
@@ -77,33 +79,30 @@ class CustomDataset(Dataset):
     def __len__(self):
         return len(self.id_list)
 
-def collate_fn(batch: torch.Tensor):
-    return tuple(zip(*batch))
-
-
 def get_loader(config):
     all_df = pd.read_csv('./train.csv')
     all_points = h5py.File('./train.h5', 'r')
     test_df = pd.read_csv('./sample_submission.csv')
     test_points = h5py.File('./test.h5', 'r')
+    transform = tio.RandomAffine(degrees=45)
 
     if config.train_ratio == 1.0:
         train_loader = DataLoader(dataset=CustomDataset(all_df, all_points), batch_size=config.batch_size,
                                   shuffle=True,
-                                  num_workers=8, collate_fn=collate_fn)
+                                  num_workers=0)
         return train_loader
 
     if config.train_ratio < 1.0:
         train_df = all_df.iloc[:int(len(all_df) * config.train_ratio)]
         val_df = all_df.iloc[int(len(all_df) * config.train_ratio):]
 
-        train_loader = DataLoader(dataset=CustomDataset(train_df['ID'].values, train_df['label'].values, all_points), batch_size=config.batch_size,
+        train_loader = DataLoader(dataset=CustomDataset(train_df['ID'].values, train_df['label'].values, all_points, transform), batch_size=config.batch_size,
                                   shuffle=True,
-                                  num_workers=0, collate_fn=collate_fn)
-        valid_loader = DataLoader(dataset=CustomDataset(val_df['ID'].values, val_df['label'].values, all_points), batch_size=config.batch_size,
+                                  num_workers=0)
+        valid_loader = DataLoader(dataset=CustomDataset(val_df['ID'].values, val_df['label'].values, all_points, transforms), batch_size=config.batch_size,
                                   shuffle=False,
-                                  num_workers=0, collate_fn=collate_fn)
-        test_loader = DataLoader(dataset=CustomDataset(test_df['ID'].values, None, test_points),
-                                 batch_size = config.batch_size, shuffle = False, num_workers=0, collate_fn=collate_fn)
+                                  num_workers=0)
+        test_loader = DataLoader(dataset=CustomDataset(test_df['ID'].values, None, test_points, None),
+                                 batch_size = config.batch_size, shuffle = False, num_workers=0)
 
         return train_loader, valid_loader, test_loader
