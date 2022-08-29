@@ -99,7 +99,7 @@ def get_loader(config):
         train_loader = DataLoader(dataset=CustomDataset(train_df['ID'].values, train_df['label'].values, all_points, transform), batch_size=config.batch_size,
                                   shuffle=True,
                                   num_workers=0)
-        valid_loader = DataLoader(dataset=CustomDataset(val_df['ID'].values, val_df['label'].values, all_points, transforms), batch_size=config.batch_size,
+        valid_loader = DataLoader(dataset=CustomDataset(val_df['ID'].values, val_df['label'].values, all_points, transform), batch_size=config.batch_size,
                                   shuffle=False,
                                   num_workers=0)
         test_loader = DataLoader(dataset=CustomDataset(test_df['ID'].values, None, test_points, None),
