@@ -21,7 +21,7 @@ def define_argparser():
     p.add_argument('--train_ratio', type=float, default=.8)
 
     p.add_argument('--batch_size', type=int, default=16)
-    p.add_argument('--n_epochs', type=int, default=30)
+    p.add_argument('--n_epochs', type=int, default=50)
     p.add_argument('--verbose', type=int, default=2)
     p.add_argument('--lr', type=float, default=0.0001)
 
@@ -58,7 +58,6 @@ def main(config):
 
     seed_everything(41)
     model = get_model(config).to(device)
-    print(model)
     optimizer = optim.Adam(model.parameters(), lr = config.lr)
     crit = nn.CrossEntropyLoss().to(device)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer,

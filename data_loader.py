@@ -84,7 +84,7 @@ def get_loader(config):
     all_points = h5py.File('./train.h5', 'r')
     test_df = pd.read_csv('./sample_submission.csv')
     test_points = h5py.File('./test.h5', 'r')
-    transform = tio.RandomAffine(degrees=45)
+    transform = tio.RandomAffine(degrees=(20, 45))
 
     if config.train_ratio == 1.0:
         train_loader = DataLoader(dataset=CustomDataset(all_df, all_points), batch_size=config.batch_size,
