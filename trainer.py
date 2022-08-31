@@ -33,6 +33,7 @@ class MyEngine(Engine):
 
         self.best_loss = np.inf
         self.best_model = None
+        self.scaler = torch.cuda.amp.GradScaler()
 
         self.device = next(model.parameters()).device
 
@@ -47,9 +48,13 @@ class MyEngine(Engine):
 
         x, y = x.float().to(engine.device), y.long().to(engine.device)
         # Take feed-forward
-        y_hat = engine.model(x)
+        with torch.cuda.amp.autocast(enabled=True):
+            y_hat = engine.model(x)
         loss = engine.crit(y_hat, y)
-        loss.backward()
+        engine.scaler.scale(loss).backward()
+        engine.scaler.step(engine.optimizer)
+        engine.scaler.update()
+        # loss.backward()
 
         # Calculate accuracy only if 'y' is LongTensor,
         # which means that 'y' is one-hot representation.
