@@ -8,6 +8,9 @@ import h5py
 from torch.utils.data import Dataset, DataLoader, random_split
 
 import pandas as pd
+import os
+import random
+import numpy as np
 
 def define_argparser():
     p = argparse.ArgumentParser()
@@ -28,6 +31,14 @@ def define_argparser():
 
     return config
 
+def seed_everything(seed):
+    random.seed(seed)
+    os.environ['PYTHONHASHSEED'] = str(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = True
 
 def get_model(config):
     if config.model == '3d':
@@ -45,10 +56,11 @@ def main(config):
     train_loader, valid_loader, test_loader = get_loader(config)
 
     print("Test:", len(test_loader.dataset))
+    seed_everything(41)
 
     model = get_model(config).to(device)
-    d = torch.load("./base_model.pth", map_location = device)
-    model.state_dict(d["model"])
+    d = torch.load(config.model_fn)
+    model.load_state_dict(d["model"])
     model.eval()
 
     test_df = pd.read_csv("./sample_submission.csv")

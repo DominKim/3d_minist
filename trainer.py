@@ -38,6 +38,7 @@ class MyEngine(Engine):
 
         self.best_loss = np.inf
         self.best_model = None
+        self.scaler = torch.cuda.amp.GradScaler()
 
         self.device = next(model.parameters()).device
 
@@ -52,6 +53,7 @@ class MyEngine(Engine):
 
         x, y = x.float().to(engine.device), y.long().to(engine.device)
         # Take feed-forward
+
         y_hat, transfeat = engine.model(x)
         loss = engine.crit(y_hat, y)
         loss += feature_transform_regularizer(transfeat) * 0.001
