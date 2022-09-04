@@ -7,7 +7,7 @@ import torch.optim as optim
 from data_loader import get_loader
 from trainer import Trainer
 
-from model_loader import BaseModel
+from model_loader import BaseModel, PointNetCls
 import random
 import os
 import numpy as np
@@ -35,6 +35,8 @@ def define_argparser():
 def get_model(config):
     if config.model == '3d':
         model = BaseModel()
+    elif config.model == "pointnet":
+        model = PointNetCls()
     else:
         print("haha")
 
@@ -52,9 +54,8 @@ def seed_everything(seed):
 def main(config):
     # Set device based on user defined configuration.
     device = torch.device('cpu') if config.gpu_id < 0 else torch.device('cuda:%d' % config.gpu_id)
-
     train_loader, valid_loader, test_loader = get_loader(config)
-
+    
     print("Test:", len(test_loader.dataset))
 
     seed_everything(41)

@@ -3,7 +3,6 @@ from copy import deepcopy
 import numpy as np
 
 import torch
-import torch.nn.functional as F
 import torch.optim as optim
 import torch.nn.utils as torch_utils
 
@@ -18,6 +17,12 @@ VERBOSE_SILENT = 0
 VERBOSE_EPOCH_WISE = 1
 VERBOSE_BATCH_WISE = 2
 
+def feature_transform_regularizer(trans):
+    D = trans.size()[1]
+    I = torch.eye(D)[None, :, :]
+    I = I.to(trans.device)
+    loss = torch.mean(torch.norm(torch.bmm(trans, trans.transpose(2,1)) - I, dim=(1,2)))
+    return loss
 
 class MyEngine(Engine):
 
@@ -47,8 +52,9 @@ class MyEngine(Engine):
 
         x, y = x.float().to(engine.device), y.long().to(engine.device)
         # Take feed-forward
-        y_hat = engine.model(x)
+        y_hat, transfeat = engine.model(x)
         loss = engine.crit(y_hat, y)
+        loss += feature_transform_regularizer(transfeat) * 0.001
         loss.backward()
 
         # Calculate accuracy only if 'y' is LongTensor,
@@ -79,9 +85,10 @@ class MyEngine(Engine):
             x, y = mini_batch
             x, y = x.float().to(engine.device), y.long().to(engine.device)
 
-            y_hat = engine.model(x)
+            y_hat, transfeat = engine.model(x)
 
             loss = engine.crit(y_hat, y)
+            loss += feature_transform_regularizer(transfeat) * 0.001
 
             if isinstance(y, torch.LongTensor) or isinstance(y, torch.cuda.LongTensor):
                 accuracy = (torch.argmax(y_hat, dim=-1) == y).sum() / float(y.size(0))
