@@ -155,9 +155,6 @@ def get_loader(config):
     all_df = pd.read_csv('./train.csv')
     all_points = h5py.File('./train.h5', 'r')
     all_points = [np.array(all_points[str(i)]) for i in tqdm(all_df["ID"])]
-    test_df = pd.read_csv('./sample_submission.csv')
-    test_points = h5py.File('./test.h5', 'r')
-    transform = tio.RandomAffine(degrees=45)
 
     if config.train_ratio == 1.0:
         train_loader = DataLoader(dataset=CustomDataset(all_df, all_points), batch_size=config.batch_size,
@@ -175,7 +172,5 @@ def get_loader(config):
         val_dataset = PointCloudDataset(val_df['ID'].values, val_df['label'].values, all_points, 8600, 'val')
         valid_loader = DataLoader(val_dataset, batch_size=config.batch_size, shuffle=False, num_workers=0)
 
-        test_dataset = PointCloudDataset(test_df['ID'].values, None, test_points, 8600, 'test')
-        test_loader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=False, num_workers=0)
 
-        return train_loader, valid_loader, test_loader
+        return train_loader, valid_loader

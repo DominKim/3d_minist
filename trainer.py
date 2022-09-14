@@ -33,6 +33,7 @@ class MyEngine(Engine):
         self.crit = crit
         self.optimizer = optimizer
         self.config = config
+        # self.scheduler = scheduler
 
         super().__init__(func)  # Ignite Engine only needs function to run.
 
@@ -53,11 +54,13 @@ class MyEngine(Engine):
 
         x, y = x.float().to(engine.device), y.long().to(engine.device)
         # Take feed-forward
-
-        y_hat, transfeat = engine.model(x)
+        with torch.cuda.amp.autocast(enabled=True):
+            y_hat, transfeat = engine.model(x)
         loss = engine.crit(y_hat, y)
         loss += feature_transform_regularizer(transfeat) * 0.001
-        loss.backward()
+        engine.scaler.scale(loss).backward()
+        engine.scaler.step(engine.optimizer)
+        engine.scaler.update()
 
         # Calculate accuracy only if 'y' is LongTensor,
         # which means that 'y' is one-hot representation.
@@ -70,7 +73,6 @@ class MyEngine(Engine):
         g_norm = float(get_grad_norm(engine.model.parameters()))
 
         # Take a step of gradient descent.
-        engine.optimizer.step()
 
         return {
             'loss': float(loss),
@@ -81,6 +83,7 @@ class MyEngine(Engine):
 
     @staticmethod
     def validate(engine, mini_batch):
+        # engine.scheduler.step()
         engine.model.eval()
 
         with torch.no_grad():
@@ -91,6 +94,7 @@ class MyEngine(Engine):
 
             loss = engine.crit(y_hat, y)
             loss += feature_transform_regularizer(transfeat) * 0.001
+
 
             if isinstance(y, torch.LongTensor) or isinstance(y, torch.cuda.LongTensor):
                 accuracy = (torch.argmax(y_hat, dim=-1) == y).sum() / float(y.size(0))

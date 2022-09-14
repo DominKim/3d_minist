@@ -1,9 +1,10 @@
 from data_loader import get_loader, CustomDataset
 import argparse
-from model_loader import BaseModel
+from model_loader import BaseModel, PointNetCls
 import torch
-import tqdm
+from tqdm.auto import tqdm
 import h5py
+from data_loader import PointCloudDataset
 
 from torch.utils.data import Dataset, DataLoader, random_split
 
@@ -43,6 +44,8 @@ def seed_everything(seed):
 def get_model(config):
     if config.model == '3d':
         model = BaseModel()
+    elif config.model == "pointnet":
+        model = PointNetCls()
     else:
         print("haha")
 
@@ -53,7 +56,11 @@ def main(config):
     # Set device based on user defined configuration.
     device = torch.device('cpu') if config.gpu_id < 0 else torch.device('cuda:%d' % config.gpu_id)
     print(device)
-    train_loader, valid_loader, test_loader = get_loader(config)
+    test_df = pd.read_csv('./sample_submission.csv')
+    test_points = h5py.File('./test.h5', 'r')
+    test_points = [np.array(test_points[str(i)]) for i in tqdm(test_df["ID"])]
+    test_dataset = PointCloudDataset(test_df['ID'].values, None, test_points, 8600, 'test')
+    test_loader = DataLoader(test_dataset, batch_size=config.batch_size, shuffle=False, num_workers=0)
 
     print("Test:", len(test_loader.dataset))
     seed_everything(41)
@@ -63,16 +70,17 @@ def main(config):
     model.load_state_dict(d["model"])
     model.eval()
 
-    test_df = pd.read_csv("./sample_submission.csv")
+
     model_preds = []
     with torch.no_grad():
-        for data in tqdm.tqdm(test_loader):
+        for data in tqdm(iter(test_loader)):
             data = data.float().to(device)
 
-            batch_pred = model(data)
+            batch_pred, trans_feat = model(data)
             
             model_preds += batch_pred.argmax(1).detach().cpu().numpy().tolist()
 
+    test_df = pd.read_csv("./sample_submission.csv")
     test_df["label"] = model_preds
     test_df.to_csv("./submit.csv", index = False)
 
